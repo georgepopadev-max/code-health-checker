@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Health Checker — George</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        :root {
+            --bg: #0a0a0f;
+            --bg2: #111118;
+            --bg3: #18181f;
+            --bg4: #1e1e28;
+            --border: #2a2a3a;
+            --teal: #00d4aa;
+            --teal-dim: #00d4aa33;
+            --orange: #ff8c42;
+            --orange-dim: #ff8c4233;
+            --red: #ff4d6a;
+            --red-dim: #ff4d6a33;
+            --text: #e8e8f0;
+            --text-dim: #8888a0;
+            --text-muted: #55556a;
+        }
+
+        body {
+            font-family: 'Segoe UI', 'SF Pro Display', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 2rem;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        /* Header */
+        .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2.5rem;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-icon {
+            width: 42px;
+            height: 42px;
+            background: var(--teal);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .logo-icon svg { width: 24px; height: 24px; fill: var(--bg); }
+
+        .brand h1 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: -0.02em;
+        }
+
+        .brand p {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin-top: 1px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .status-badge {
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 0.35rem 0.85rem;
+            font-size: 0.75rem;
+            color: var(--text-dim);
+        }
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            background: var(--teal);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .last-scan {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        /* Section Titles */
+        .section-title {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: var(--text-muted);
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+        }
+
+        /* Repository Cards */
+        .repos-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .repo-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.25rem;
+            cursor: pointer;
+            transition: border-color 0.2s, transform 0.15s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .repo-card:hover {
+            border-color: var(--teal);
+            transform: translateY(-2px);
+        }
+
+        .repo-card.selected { border-color: var(--teal); }
+
+        .repo-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 2px;
+        }
+
+        .repo-card.score-high::before { background: var(--teal); }
+        .repo-card.score-mid::before { background: var(--orange); }
+        .repo-card.score-low::before { background: var(--red); }
+
+        .repo-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 0.6rem;
+        }
+
+        .repo-name {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .repo-lang {
+            font-size: 0.68rem;
+            background: var(--teal-dim);
+            color: var(--teal);
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .repo-meta {
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        .health-score-row {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            margin-top: 0.8rem;
+        }
+
+        .health-label {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+            min-width: 28px;
+        }
+
+        .health-bar-track {
+            flex: 1;
+            height: 5px;
+            background: var(--bg4);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .health-bar-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.8s ease;
+        }
+
+        .health-bar-fill.high { background: var(--teal); }
+        .health-bar-fill.mid { background: var(--orange); }
+        .health-bar-fill.low { background: var(--red); }
+
+        .health-pct {
+            font-size: 0.72rem;
+            font-weight: 600;
+            min-width: 32px;
+            text-align: right;
+        }
+
+        .health-pct.high { color: var(--teal); }
+        .health-pct.mid { color: var(--orange); }
+        .health-pct.low { color: var(--red); }
+
+        .repo-date {
+            font-size: 0.65rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+        }
+
+        /* Main Grid */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        /* Radar Card */
+        .card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+        }
+
+        .card-title {
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 0.25rem;
+        }
+
+        .card-subtitle {
+            font-size: 0.72rem;
+            color: var(--text-dim);
+            margin-bottom: 1.2rem;
+        }
+
+        #radarChart {
+            width: 100%;
+            height: 260px;
+        }
+
+        /* Metrics Cards */
+        .metrics-row {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 0.75rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 1rem 1.25rem;
+            text-align: center;
+            transition: border-color 0.2s;
+        }
+
+        .metric-card:hover { border-color: var(--teal); }
+
+        .metric-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--text);
+            letter-spacing: -0.03em;
+            line-height: 1;
+            margin-bottom: 0.35rem;
+        }
+
+        .metric-value.teal { color: var(--teal); }
+        .metric-value.orange { color: var(--orange); }
+        .metric-value.red { color: var(--red); }
+
+        .metric-label {
+            font-size: 0.68rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            font-weight: 600;
+        }
+
+        /* Findings Table */
+        .findings-section { margin-bottom: 2rem; }
+
+        .findings-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 0.75rem;
+        }
+
+        .findings-tabs {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .tab-btn {
+            background: none;
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            font-size: 0.72rem;
+            padding: 0.3rem 0.75rem;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .tab-btn:hover, .tab-btn.active {
+            background: var(--teal);
+            border-color: var(--teal);
+            color: var(--bg);
+            font-weight: 600;
+        }
+
+        .tab-btn .count {
+            display: inline-block;
+            margin-left: 4px;
+            opacity: 0.7;
+        }
+
+        .findings-table-wrap {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .findings-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .findings-table thead tr {
+            background: var(--bg3);
+        }
+
+        .findings-table th {
+            text-align: left;
+            font-size: 0.68rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.07em;
+            color: var(--text-muted);
+            padding: 0.75rem 1rem;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+        }
+
+        .findings-table th:hover { color: var(--teal); }
+
+        .findings-table th:first-child { padding-left: 1.25rem; }
+
+        .findings-table tbody tr {
+            border-bottom: 1px solid var(--border);
+            transition: background 0.1s;
+        }
+
+        .findings-table tbody tr:last-child { border-bottom: none; }
+
+        .findings-table tbody tr:nth-child(even) { background: var(--bg3); }
+
+        .findings-table tbody tr:hover { background: var(--bg4); }
+
+        .findings-table td {
+            padding: 0.75rem 1rem;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            vertical-align: middle;
+        }
+
+        .findings-table td:first-child { padding-left: 1.25rem; }
+
+        .severity-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            font-size: 0.68rem;
+            font-weight: 700;
+            padding: 0.2rem 0.55rem;
+            border-radius: 5px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .severity-badge.critical {
+            background: var(--red-dim);
+            color: var(--red);
+            border: 1px solid #ff4d6a44;
+        }
+
+        .severity-badge.warning {
+            background: var(--orange-dim);
+            color: var(--orange);
+            border: 1px solid #ff8c4244;
+        }
+
+        .severity-badge.info {
+            background: #3b82f620;
+            color: #60a5fa;
+            border: 1px solid #3b82f630;
+        }
+
+        .type-badge {
+            display: inline-block;
+            font-size: 0.66rem;
+            padding: 0.15rem 0.45rem;
+            background: var(--bg4);
+            color: var(--text-dim);
+            border-radius: 4px;
+            border: 1px solid var(--border);
+            white-space: nowrap;
+        }
+
+        .file-path {
+            font-family: 'Consolas', 'Fira Code', monospace;
+            font-size: 0.75rem;
+            color: var(--text-dim);
+        }
+
+        .suggestion-text {
+            font-size: 0.78rem;
+            color: var(--text-dim);
+        }
+
+        .sort-indicator {
+            display: inline-block;
+            margin-left: 4px;
+            opacity: 0.5;
+        }
+
+        /* Recommendations */
+        .recommendations-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+
+        .rec-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.25rem;
+            border-top: 3px solid var(--teal);
+            transition: border-color 0.2s;
+        }
+
+        .rec-card:hover { border-color: var(--teal); }
+
+        .rec-number {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 22px;
+            height: 22px;
+            background: var(--teal-dim);
+            color: var(--teal);
+            border-radius: 50%;
+            font-size: 0.7rem;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+        }
+
+        .rec-title {
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 0.5rem;
+            line-height: 1.3;
+        }
+
+        .rec-body {
+            font-size: 0.78rem;
+            color: var(--text-dim);
+            line-height: 1.6;
+        }
+
+        .rec-tag {
+            display: inline-block;
+            font-size: 0.65rem;
+            margin-top: 0.75rem;
+            padding: 0.15rem 0.5rem;
+            background: var(--bg4);
+            color: var(--teal);
+            border-radius: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Responsive */
+        @media (max-width: 900px) {
+            .repos-grid { grid-template-columns: 1fr 1fr; }
+            .main-grid { grid-template-columns: 1fr; }
+            .metrics-row { grid-template-columns: repeat(3, 1fr); }
+            .recommendations-grid { grid-template-columns: 1fr; }
+        }
+
+        @media (max-width: 600px) {
+            body { padding: 1rem; }
+            .repos-grid { grid-template-columns: 1fr; }
+            .metrics-row { grid-template-columns: 1fr 1fr; }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+    </style>
+</head>
+<body>
+<div class="container">
+
+    <!-- Header -->
+    <div class="header">
+        <div class="header-left">
+            <div class="logo-icon">
+                <svg viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/></svg>
+            </div>
+            <div class="brand">
+                <h1>Code Health Checker</h1>
+                <p>Automated code quality analysis for GitHub repositories</p>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="status-badge">
+                <div class="status-dot"></div>
+                Scanner Active
+            </div>
+            <div class="last-scan">Last scan: 2 min ago</div>
+        </div>
+    </div>
+
+    <!-- Repository Cards -->
+    <div class="section-title">Repositories</div>
+    <div class="repos-grid" id="reposGrid">
+        <div class="repo-card selected score-high" data-repo="energy-service">
+            <div class="repo-card-header">
+                <div class="repo-name">⚡ energy-service</div>
+                <div class="repo-lang">Java</div>
+            </div>
+            <div class="repo-meta">
+                <span>main</span>
+                <span>● 3 branches</span>
+            </div>
+            <div class="health-score-row">
+                <span class="health-label">Health</span>
+                <div class="health-bar-track">
+                    <div class="health-bar-fill high" style="width:74%"></div>
+                </div>
+                <span class="health-pct high">74%</span>
+            </div>
+            <div class="repo-date">Analyzed 2 min ago · 8 findings</div>
+        </div>
+        <div class="repo-card score-mid" data-repo="grid-monitor">
+            <div class="repo-card-header">
+                <div class="repo-name">📡 grid-monitor</div>
+                <div class="repo-lang">Python</div>
+            </div>
+            <div class="repo-meta">
+                <span>develop</span>
+                <span>● 5 branches</span>
+            </div>
+            <div class="health-score-row">
+                <span class="health-label">Health</span>
+                <div class="health-bar-track">
+                    <div class="health-bar-fill mid" style="width:61%"></div>
+                </div>
+                <span class="health-pct mid">61%</span>
+            </div>
+            <div class="repo-date">Analyzed 12 min ago · 14 findings</div>
+        </div>
+        <div class="repo-card score-low" data-repo="billing-engine">
+            <div class="repo-card-header">
+                <div class="repo-name">💳 billing-engine</div>
+                <div class="repo-lang">TypeScript</div>
+            </div>
+            <div class="repo-meta">
+                <span>main</span>
+                <span>● 2 branches</span>
+            </div>
+            <div class="health-score-row">
+                <span class="health-label">Health</span>
+                <div class="health-bar-track">
+                    <div class="health-bar-fill low" style="width:47%"></div>
+                </div>
+                <span class="health-pct low">47%</span>
+            </div>
+            <div class="repo-date">Analyzed 34 min ago · 23 findings</div>
+        </div>
+    </div>
+
+    <!-- Main Grid: Radar + Breakdown -->
+    <div class="main-grid">
+        <!-- Radar Chart -->
+        <div class="card">
+            <div class="card-title">Health Radar</div>
+            <div class="card-subtitle">energy-service — 6-axis quality breakdown</div>
+            <div id="radarChart"></div>
+        </div>
+
+        <!-- Issue Breakdown -->
+        <div class="card">
+            <div class="card-title">Issue Breakdown</div>
+            <div class="card-subtitle">By category</div>
+            <div id="breakdownChart" style="width:100%;height:260px;"></div>
+        </div>
+    </div>
+
+    <!-- Metrics Row -->
+    <div class="section-title">Project Metrics</div>
+    <div class="metrics-row" id="metricsRow">
+        <div class="metric-card">
+            <div class="metric-value">24,847</div>
+            <div class="metric-label">Lines of Code</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-value teal">72.3%</div>
+            <div class="metric-label">Test Coverage</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-value orange">2.3</div>
+            <div class="metric-label">Avg Complexity</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-value red">3d 4h</div>
+            <div class="metric-label">Tech Debt</div>
+        </div>
+        <div class="metric-card">
+            <div class="metric-value">156</div>
+            <div class="metric-label">Files</div>
+        </div>
+    </div>
+
+    <!-- Findings Table -->
+    <div class="findings-section">
+        <div class="findings-header">
+            <div>
+                <div class="section-title">Findings</div>
+            </div>
+            <div class="findings-tabs" id="findingsTabs">
+                <button class="tab-btn active" data-filter="all">All <span class="count">8</span></button>
+                <button class="tab-btn" data-filter="warning">Warnings <span class="count">3</span></button>
+                <button class="tab-btn" data-filter="info">Info <span class="count">5</span></button>
+            </div>
+        </div>
+        <div class="findings-table-wrap">
+            <table class="findings-table" id="findingsTable">
+                <thead>
+                    <tr>
+                        <th data-sort="severity">Severity <span class="sort-indicator">↕</span></th>
+                        <th data-sort="file">File <span class="sort-indicator">↕</span></th>
+                        <th data-sort="type">Type <span class="sort-indicator">↕</span></th>
+                        <th data-sort="suggestion">Suggestion</th>
+                    </tr>
+                </thead>
+                <tbody id="findingsBody">
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Recommendations -->
+    <div class="section-title">Recommendations</div>
+    <div class="recommendations-grid">
+        <div class="rec-card">
+            <div class="rec-number">1</div>
+            <div class="rec-title">Refactor Long Methods</div>
+            <div class="rec-body">Three methods in <strong>EnergyConsumptionService.java</strong> exceed 80 lines. Extracting helper methods and using the Strategy pattern would reduce complexity and improve testability.</div>
+            <div class="rec-tag">High Priority</div>
+        </div>
+        <div class="rec-card" style="border-top-color: var(--orange);">
+            <div class="rec-number" style="background:var(--orange-dim);color:var(--orange);">2</div>
+            <div class="rec-title">Address God Class</div>
+            <div class="rec-body"><strong>BillingController.java</strong> has 42 methods and 900+ lines. Consider extracting <em>InvoiceGenerator</em>, <em>PaymentProcessor</em>, and <em>RefundHandler</em> as separate services.</div>
+            <div class="rec-tag" style="color:var(--orange);">Medium Priority</div>
+        </div>
+        <div class="rec-card" style="border-top-color: #3b82f6;">
+            <div class="rec-number" style="background:#3b82f620;color:#60a5fa;">3</div>
+            <div class="rec-title">Improve Documentation</div>
+            <div class="rec-body">Only 34% of public methods have Javadoc. Adding documentation to <em>GridStateValidator</em> and <em>ConsumptionAggregator</em> would improve team onboarding speed significantly.</div>
+            <div class="rec-tag" style="color:#60a5fa;">Low Priority</div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+// --- Data ---
+const findingsData = [
+    { severity: 'warning', file: 'src/main/service/EnergyConsumptionService.java', type: 'Long Method', suggestion: 'Method calculateDailyAggregate exceeds 80 lines. Extract helper methods.' },
+    { severity: 'warning', file: 'src/main/controller/BillingController.java', type: 'God Class', suggestion: 'Class has 42 methods. Consider splitting into InvoiceGenerator, PaymentProcessor.' },
+    { severity: 'warning', file: 'src/main/validator/GridStateValidator.java', type: 'Complex Logic', suggestion: 'Nested ternary chain (depth 5). Simplify with early returns or extract method.' },
+    { severity: 'info', file: 'src/main/model/ConsumptionRecord.java', type: 'Missing Annotation', suggestion: 'Add @DataJpaTest or test profile annotation for cleaner test isolation.' },
+    { severity: 'info', file: 'src/main/repository/UsageRepository.java', type: 'Naming Convention', suggestion: 'Method findAllByCustomerId could be renamed to findByCustomerId for consistency.' },
+    { severity: 'info', file: 'src/main/util/RateCalculator.java', type: 'Magic Number', suggestion: 'Literal 0.15 used in rate calculation. Extract to constant RATE_MULTIPLIER.' },
+    { severity: 'info', file: 'src/main/service/AlertsService.java', type: 'Duplicated Logic', suggestion: 'Notification formatting is duplicated in 3 places. Extract to NotificationFormatter class.' },
+    { severity: 'info', file: 'pom.xml', type: 'Outdated Dependency', suggestion: 'Spring Boot version 3.0.2 is 2 minor versions behind. Consider upgrading to 3.0.5.' },
+];
+
+let sortDir = {};
+let currentFilter = 'all';
+
+// --- ECharts Setup ---
+const radarChart = echarts.init(document.getElementById('radarChart'));
+const radarOption = {
+    backgroundColor: 'transparent',
+    radar: {
+        indicator: [
+            { name: 'Coverage', max: 100 },
+            { name: 'Complexity', max: 100 },
+            { name: 'Duplication', max: 100 },
+            { name: 'Documentation', max: 100 },
+            { name: 'Security', max: 100 },
+            { name: 'Maintainability', max: 100 },
+        ],
+        radius: '68%',
+        splitNumber: 4,
+        axisName: {
+            color: '#8888a0',
+            fontSize: 11,
+            fontWeight: '600',
+        },
+        splitLine: { lineStyle: { color: '#2a2a3a' } },
+        splitArea: {
+            show: true,
+            areaStyle: { color: ['#18181f', '#111118', '#18181f', '#111118'] },
+        },
+        axisLine: { lineStyle: { color: '#2a2a3a' } },
+    },
+    series: [{
+        type: 'radar',
+        data: [{
+            value: [72, 45, 28, 65, 81, 78],
+            name: 'energy-service',
+            areaStyle: {
+                color: new echarts.graphic.RadialGradient(0.5, 0.5, 1, [
+                    { offset: 0, color: 'rgba(0, 212, 170, 0.5)' },
+                    { offset: 1, color: 'rgba(0, 212, 170, 0)' },
+                ]),
+            },
+            lineStyle: { color: '#00d4aa', width: 2 },
+            itemStyle: { color: '#00d4aa' },
+            symbol: 'circle',
+            symbolSize: 6,
+        }],
+    }],
+};
+radarChart.setOption(radarOption);
+
+// Breakdown donut chart
+const breakdownChart = echarts.init(document.getElementById('breakdownChart'));
+const breakdownOption = {
+    backgroundColor: 'transparent',
+    tooltip: { trigger: 'item', backgroundColor: '#18181f', borderColor: '#2a2a3a', textStyle: { color: '#e8e8f0' } },
+    legend: { orient: 'vertical', right: '5%', top: 'center', textStyle: { color: '#8888a0', fontSize: 11 }, itemWidth: 10, itemHeight: 10 },
+    series: [{
+        type: 'pie',
+        radius: ['42%', '70%'],
+        center: ['35%', '50%'],
+        avoidLabelOverlap: true,
+        itemStyle: { borderRadius: 5, borderColor: '#111118', borderWidth: 2 },
+        label: { show: false },
+        data: [
+            { value: 35, name: 'Long Method', itemStyle: { color: '#ff4d6a' } },
+            { value: 25, name: 'God Class', itemStyle: { color: '#ff8c42' } },
+            { value: 20, name: 'Complex Logic', itemStyle: { color: '#ffd166' } },
+            { value: 10, name: 'Duplication', itemStyle: { color: '#06d6a0' } },
+            { value: 10, name: 'Missing Docs', itemStyle: { color: '#60a5fa' } },
+        ],
+    }],
+};
+breakdownChart.setOption(breakdownOption);
+
+// --- Render Findings ---
+function renderFindings(filter = 'all', sortKey = null, sortDir = 1) {
+    let data = [...findingsData];
+    if (filter !== 'all') data = data.filter(f => f.severity === filter);
+    if (sortKey) {
+        data.sort((a, b) => {
+            const av = a[sortKey], bv = b[sortKey];
+            return av < bv ? -sortDir : av > bv ? sortDir : 0;
+        });
+    }
+    const tbody = document.getElementById('findingsBody');
+    tbody.innerHTML = data.map(f => `
+        <tr>
+            <td><span class="severity-badge ${f.severity}">
+                <span style="font-size:0.6rem">${f.severity === 'warning' ? '▲' : f.severity === 'critical' ? '●' : '◆'}</span>
+                ${f.severity}
+            </span></td>
+            <td><span class="file-path">${f.file}</span></td>
+            <td><span class="type-badge">${f.type}</span></td>
+            <td class="suggestion-text">${f.suggestion}</td>
+        </tr>
+    `).join('');
+}
+
+// Tab filtering
+document.getElementById('findingsTabs').addEventListener('click', e => {
+    if (e.target.classList.contains('tab-btn')) {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        e.target.classList.add('active');
+        currentFilter = e.target.dataset.filter;
+        renderFindings(currentFilter, Object.keys(sortDir)[0], sortDir[Object.keys(sortDir)[0]] || 1);
+    }
+});
+
+// Column sorting
+document.querySelectorAll('th[data-sort]').forEach(th => {
+    th.addEventListener('click', () => {
+        const key = th.dataset.sort;
+        sortDir[key] = sortDir[key] ? -sortDir[key] : -1;
+        document.querySelectorAll('th').forEach(h => { const si = h.querySelector('.sort-indicator'); if (si) si.textContent = '↕'; });
+        const indicator = th.querySelector('.sort-indicator');
+        indicator.textContent = sortDir[key] === 1 ? '↑' : '↓';
+        renderFindings(currentFilter, key, sortDir[key]);
+    });
+});
+
+// Repository card selection
+document.querySelectorAll('.repo-card').forEach(card => {
+    card.addEventListener('click', () => {
+        document.querySelectorAll('.repo-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+    });
+});
+
+// Initial render
+renderFindings();
+
+// Responsive
+window.addEventListener('resize', () => { radarChart.resize(); breakdownChart.resize(); });
+</script>
+</body>
+</html>
