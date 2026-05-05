@@ -100,7 +100,7 @@ export class RadarChartComponent implements OnInit {
             grid: { color: 'rgba(0,0,0,0.1)' },
             angleLines: { color: 'rgba(0,0,0,0.1)' },
             pointLabels: {
-              font: { size: 12, weight: '500' },
+              font: { size: 12, weight: 500 },
               color: '#374151'
             }
           }

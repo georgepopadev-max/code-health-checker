@@ -1,5 +1,5 @@
 import { Component, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { CommonModule, DecimalPipe } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { ApiService } from '../../services/api.service';
 import { Repository, HealthReport, DashboardStats } from '../../models';
@@ -11,7 +11,7 @@ import { RecommendationsComponent } from '../recommendations/recommendations.com
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, RouterModule, RadarChartComponent, MetricsCardComponent, FindingsListComponent, RecommendationsComponent],
+  imports: [CommonModule, RouterModule, RadarChartComponent, MetricsCardComponent, FindingsListComponent, RecommendationsComponent, DecimalPipe],
   template: `
     <div class="dashboard">
       <header class="dashboard-header">
@@ -31,8 +31,7 @@ import { RecommendationsComponent } from '../recommendations/recommendations.com
         </app-metrics-card>
         <app-metrics-card 
           title="Total Lines Analyzed" 
-          [value]="stats.totalLinesAnalyzed"
-          [format]="number">
+          [value]="stats.totalLinesAnalyzed">
         </app-metrics-card>
         <app-metrics-card 
           title="Critical Issues" 
