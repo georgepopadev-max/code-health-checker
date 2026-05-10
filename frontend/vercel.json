@@ -1,5 +1,0 @@
-{
-  "buildCommand": "npm install && npm run build",
-  "outputDirectory": "dist/code-health-frontend/browser",
-  "framework": "angular"
-}
