@@ -177,13 +177,13 @@ import { RecommendationsComponent } from '../recommendations/recommendations.com
     .btn-primary:hover { background: #4338ca; }
     .stats-row {
       display: grid;
-      grid-template-columns: repeat(4, 1fr);
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
       gap: 16px;
       margin-bottom: 24px;
     }
     .main-content {
       display: grid;
-      grid-template-columns: 320px 1fr;
+      grid-template-columns: minmax(200px, 320px) 1fr;
       gap: 24px;
     }
     .repositories-panel {
@@ -284,6 +284,35 @@ import { RecommendationsComponent } from '../recommendations/recommendations.com
       background: white;
       border-radius: 12px;
       color: #9ca3af;
+    }
+    
+    /* Responsive styles */
+    @media (max-width: 1200px) {
+      .dashboard { padding: 16px; }
+      .dashboard-header h1 { font-size: 24px; }
+    }
+    
+    @media (max-width: 900px) {
+      .main-content { grid-template-columns: 1fr; gap: 16px; }
+      .repositories-panel { max-height: 300px; overflow-y: auto; }
+      .stats-row { grid-template-columns: repeat(2, 1fr); }
+    }
+    
+    @media (max-width: 600px) {
+      .dashboard { padding: 12px; }
+      .stats-row { gap: 12px; }
+      .report-panel { padding: 16px; }
+      .report-header { flex-direction: column; gap: 12px; }
+      .export-actions { flex-wrap: wrap; }
+    }
+    
+    @media (max-width: 480px) {
+      .dashboard-header { flex-direction: column; align-items: flex-start; gap: 12px; }
+      .stats-row { grid-template-columns: 1fr; }
+      .finding-item { flex-direction: column; align-items: flex-start; }
+      .finding-meta { flex-wrap: wrap; gap: 8px; }
+      .tabs { flex-wrap: wrap; }
+      .tab { padding: 8px 12px; font-size: 13px; }
     }
   `]
 })

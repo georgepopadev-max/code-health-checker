@@ -31,7 +31,7 @@ import { Finding } from '../../models';
     </div>
   `,
   styles: [`
-    .findings-list { padding: 8px 0; }
+    .findings-list { padding: 8px 0; overflow-x: auto; }
     .findings-header {
       display: flex;
       align-items: center;

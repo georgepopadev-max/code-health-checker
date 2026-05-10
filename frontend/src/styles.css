@@ -18,3 +18,35 @@ button {
 input, textarea, select {
   font-family: inherit;
 }
+
+/* ============================================
+   RESPONSIVE STYLES - Media Queries
+   ============================================ */
+
+/* Large laptops/desktops */
+@media (max-width: 1200px) {
+  body {
+    font-size: 13px;
+  }
+}
+
+/* Tablets */
+@media (max-width: 900px) {
+  body {
+    font-size: 12px;
+  }
+}
+
+/* Mobile landscape / small tablets */
+@media (max-width: 600px) {
+  body {
+    font-size: 11px;
+  }
+}
+
+/* Mobile portrait */
+@media (max-width: 480px) {
+  body {
+    font-size: 10px;
+  }
+}
