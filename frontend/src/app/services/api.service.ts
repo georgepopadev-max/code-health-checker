@@ -4,12 +4,13 @@ import { Observable, of } from 'rxjs';
 import { catchError, timeout } from 'rxjs/operators';
 import { Repository, HealthReport, AnalysisRequest } from '../models';
 import { MOCK_REPOSITORIES, MOCK_HEALTH_REPORT } from './mock-data';
+import { USE_MOCK_DATA, API_CONFIG } from '../constants';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ApiService {
-  private timeoutMs = 5000;
+  private timeoutMs = API_CONFIG.timeoutMs;
 
   constructor(private http: HttpClient) {}
 
@@ -18,7 +19,7 @@ export class ApiService {
     if (vercelEnv?.API_URL_BACK) {
       return vercelEnv.API_URL_BACK;
     }
-    return '/api';
+    return API_CONFIG.baseUrl;
   }
 
   private get<T>(path: string): Observable<T> {
@@ -36,11 +37,19 @@ export class ApiService {
   }
 
   getRepositories(): Observable<Repository[]> {
-    const result = this.get<Repository[]>(`/repositories`);
-    return result.pipe(catchError(() => of(MOCK_REPOSITORIES)));
+    if (USE_MOCK_DATA) {
+      return of(MOCK_REPOSITORIES);
+    }
+    return this.get<Repository[]>(`/repositories`).pipe(
+      catchError(() => of(MOCK_REPOSITORIES))
+    );
   }
 
   getRepository(owner: string, name: string): Observable<Repository> {
+    if (USE_MOCK_DATA) {
+      const found = MOCK_REPOSITORIES.find(r => r.owner === owner && r.name === name);
+      return of(found || MOCK_REPOSITORIES[0]);
+    }
     return this.get<Repository>(`/repositories/${owner}/${name}`).pipe(
       catchError(() => {
         const found = MOCK_REPOSITORIES.find(r => r.owner === owner && r.name === name);
@@ -50,18 +59,27 @@ export class ApiService {
   }
 
   connectRepository(request: AnalysisRequest): Observable<Repository> {
+    if (USE_MOCK_DATA) {
+      return of(MOCK_REPOSITORIES[0]);
+    }
     return this.post<Repository, AnalysisRequest>(`/repositories/connect`, request).pipe(
       catchError(() => of(MOCK_REPOSITORIES[0]))
     );
   }
 
   triggerAnalysis(owner: string, name: string): Observable<void> {
+    if (USE_MOCK_DATA) {
+      return of(undefined as void);
+    }
     return this.post<void, {}>(`/repositories/${owner}/${name}/analyze`, {}).pipe(
       catchError(() => of(undefined as void))
     );
   }
 
   getLatestReport(owner: string, name: string): Observable<HealthReport> {
+    if (USE_MOCK_DATA) {
+      return of(MOCK_HEALTH_REPORT);
+    }
     return this.get<HealthReport>(`/repositories/${owner}/${name}/report`).pipe(
       catchError(() => of(MOCK_HEALTH_REPORT))
     );
