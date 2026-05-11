@@ -1,9 +1,20 @@
 import { Component, Input, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Chart, RadarController, RadialLinearScale, PointElement, LineElement, Filler, Legend, Tooltip } from 'chart.js';
+import { Chart, RadarController, RadialLinearScale, PointElement, LineElement, Filler, Legend, Tooltip, ChartDataset } from 'chart.js';
 import { HealthReport } from '../../models';
 
 Chart.register(RadarController, RadialLinearScale, PointElement, LineElement, Filler, Legend, Tooltip);
+
+interface RadarDataset extends ChartDataset<'radar'> {
+  label: string;
+  data: number[];
+  backgroundColor: string;
+  borderColor: string;
+  borderWidth: number;
+  borderDash?: number[];
+  pointBackgroundColor: string;
+  pointRadius: number;
+}
 
 @Component({
   selector: 'app-radar-chart',
@@ -50,7 +61,7 @@ export class RadarChartComponent implements OnInit {
       this.data.maintainabilityScore
     ];
 
-    const datasets: any[] = [
+    const datasets: RadarDataset[] = [
       {
         label: 'Current',
         data: currentData,
@@ -58,7 +69,6 @@ export class RadarChartComponent implements OnInit {
         borderColor: '#4f46e5',
         borderWidth: 2,
         pointBackgroundColor: '#4f46e5',
-        pointBorderColor: '#fff',
         pointRadius: 5
       }
     ];
